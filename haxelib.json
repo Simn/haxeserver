@@ -6,5 +6,8 @@
 	"version": "0.0.1",
 	"releasenote": "Initial",
 	"classPath": "src",
-	"contributors": ["Simn","nadako", "Gama11"]
+	"contributors": ["Simn","nadako", "Gama11"],
+	"dependencies": {
+		"json-rpc": ""
+	}
 }
