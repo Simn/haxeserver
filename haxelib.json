@@ -1,0 +1,10 @@
+{
+	"name": "haxeserver",
+	"description": "Haxe interface to the Haxe compilation server",
+	"url": "https://github.com/vshaxe/haxeserver",
+	"license": "MIT",
+	"version": "0.0.1",
+	"releasenote": "Initial",
+	"classPath": "src",
+	"contributors": ["Simn","nadako", "Gama11"]
+}
