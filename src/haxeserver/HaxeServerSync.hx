@@ -31,11 +31,7 @@ class HaxeServerSync extends HaxeServerBase {
 			arguments = arguments.concat(["-D", "display-stdin"]);
 		}
 		var result = null;
-		process.request(arguments, stdin, returnedResult -> result = returnedResult);
-		while (result == null) {
-			Sys.sleep(0.01);
-			trace(result);
-		}
+		process.request(arguments, stdin, returnedResult -> result = returnedResult, err -> throw err);
 		return result;
 	}
 

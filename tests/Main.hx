@@ -58,7 +58,7 @@ class TestAsyncInterface implements ITest {
 		haxeServer.rawRequest(args, result -> {
 			Assert.isFalse(result.hasError);
 			Assert.equals(args.join(" "), result.stderr);
-		});
+		}, msg -> Assert.fail(msg));
 	}
 
 	public function testStdin() {
@@ -67,7 +67,27 @@ class TestAsyncInterface implements ITest {
 		haxeServer.rawRequest(args, Bytes.ofString(stdin), result -> {
 			Assert.isFalse(result.hasError);
 			Assert.equals(stdin, result.stdout);
-		});
+		}, msg -> Assert.fail(msg));
+	}
+}
+
+class TestAsyncError implements ITest {
+	var process:IHaxeServerProcess;
+	var haxeServer:HaxeServerAsync;
+
+	public function new() {}
+
+	function teardown() {
+		haxeServer.close();
+	}
+
+	public function testError() {
+		process = new HaxeServerProcessError();
+		haxeServer = new HaxeServerAsync(() -> process);
+		var args = ["-cp", "src"];
+		haxeServer.rawRequest(args, result -> {
+			Assert.fail("Unexpected result: " + result);
+		}, msg -> Assert.pass(msg));
 	}
 }
 
@@ -76,6 +96,7 @@ class Main {
 		var runner = new Runner();
 		runner.addCase(new TestSyncInterface());
 		runner.addCase(new TestAsyncInterface());
+		runner.addCase(new TestAsyncError());
 		var report = Report.create(runner);
 		report.displayHeader = AlwaysShowHeader;
 		report.displaySuccessResults = NeverShowSuccessResults;

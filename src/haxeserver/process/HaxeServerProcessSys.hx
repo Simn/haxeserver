@@ -35,7 +35,7 @@ class HaxeServerProcessSys implements IHaxeServerProcess extends HaxeServerProce
 		If `stdin` is no `null`, it is passed to the compilation server as part
 		of the request.
 	**/
-	public function request(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void) {
+	public function request(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
 		var bytes = prepareInput(arguments, stdin);
 		process.stdin.write(bytes);
 		var read = process.stderr.read(process.stderr.readInt32());

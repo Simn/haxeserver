@@ -1,5 +1,6 @@
 package haxeserver.process;
 
+import js.node.child_process.ChildProcess.ChildProcessEvent;
 import haxe.io.Bytes;
 import js.node.Buffer;
 import js.node.stream.Readable.ReadableEvent;
@@ -9,15 +10,17 @@ import js.node.ChildProcess;
 private class RequestCallback {
 	public var next:Null<RequestCallback>;
 	public final callback:HaxeServerRequestResult->Void;
+	public final errback:String->Void;
 	public var stdout:Buffer;
 
-	public function new(callback:HaxeServerRequestResult->Void) {
+	public function new(callback:HaxeServerRequestResult->Void, errback:String->Void) {
 		this.callback = callback;
+		this.errback = errback;
 		stdout = Buffer.alloc(0);
 	}
 
-	public function append(callback:HaxeServerRequestResult->Void) {
-		next = new RequestCallback(callback);
+	public function append(callback:HaxeServerRequestResult->Void, errback:String->Void) {
+		next = new RequestCallback(callback, errback);
 	}
 
 	public function addStdout(buf:Buffer) {
@@ -43,17 +46,18 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		buffer = Buffer.alloc(0);
 		process.stderr.on(ReadableEvent.Data, onData);
 		process.stdout.on(ReadableEvent.Data, onStdout);
+		process.on(ChildProcessEvent.Exit, onExit);
 	}
 
 	public function isAsynchronous() {
 		return true;
 	}
 
-	public function request(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void) {
+	public function request(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
 		if (requests == null) {
-			requests = new RequestCallback(callback);
+			requests = new RequestCallback(callback, errback);
 		} else {
-			requests.append(callback);
+			requests.append(callback, errback);
 		}
 		var bytes = prepareInput(arguments, stdin);
 		process.stdin.write(Buffer.hxFromBytes(bytes));
@@ -77,6 +81,13 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		}
 	}
 
+	function onExit(code:Int, msg:String) {
+		while (requests != null) {
+			requests.errback('Process exited with code $code: $msg');
+			requests = requests.next;
+		}
+	}
+
 	function processBuffer() {
 		if (response == null) {
 			if (buffer.length < 4) {
@@ -95,13 +106,9 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		buffer = buffer.slice(length);
 		response.index += length;
 		if (response.index == response.length) {
-			if (requests != null) {
-				var result = processResult(response.buffer.hxToBytes(), requests.stdout.hxToBytes());
-				requests.callback(result);
-				requests = requests.next;
-			} else {
-				trace("Something went wrong: " + response.buffer.toString());
-			}
+			var result = processResult(response.buffer.hxToBytes(), requests.stdout.hxToBytes());
+			requests.callback(result);
+			requests = requests.next;
 			response = null;
 		}
 	}

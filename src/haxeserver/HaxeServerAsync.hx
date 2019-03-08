@@ -28,28 +28,28 @@ class HaxeServerAsync extends HaxeServerBase {
 		If `stdin` is not `null`, it is passed to the process and the argument list
 		is expanded by `-D display-stdin`.
 	**/
-	public function rawRequest(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void) {
+	public function rawRequest(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
 		arguments = defaultRequestArguments.concat(arguments);
 		if (stdin != null) {
 			arguments = arguments.concat(["-D", "display-stdin"]);
 		}
-		process.request(arguments, stdin, callback);
+		process.request(arguments, stdin, callback, errback);
 	}
 
 	/**
 		Sends a json-rpc request to the process, with the given `method` and `params` and calls `callback` upon completion.
 	**/
-	public function request<P, R>(method:HaxeRequestMethod<P, R>, ?params:P, callback:R->Void) {
+	public function request<P, R>(method:HaxeRequestMethod<P, R>, ?params:P, callback:R->Void, errback:String->Void) {
 		var arguments = getRequestArguments(method, params);
 		function rawCallback(result) {
 			var json = try {
 				Json.parse(result.stderr);
-			} catch (e:Any) {
-				return;
+			} catch (e:Dynamic) {
+				return errback(Std.string(e));
 			}
 			callback(json);
 		}
-		rawRequest(arguments, null, rawCallback);
+		rawRequest(arguments, null, rawCallback, errback);
 	}
 
 	/**
