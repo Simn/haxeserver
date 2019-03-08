@@ -4,7 +4,7 @@ import haxeserver.protocol.Protocol;
 import haxeserver.protocol.Display;
 import haxeserver.protocol.Server;
 
-abstract HaxeServerServerMethods(HaxeServer) from HaxeServer {
+abstract HaxeServerServerMethods(HaxeServerSync) from HaxeServerSync {
 	public function readClassPaths() {
 		return this.request(ServerMethods.ReadClassPaths).result.result;
 	}
@@ -18,13 +18,13 @@ abstract HaxeServerServerMethods(HaxeServer) from HaxeServer {
 	}
 }
 
-abstract HaxeServerProtocolMethods(HaxeServer) from HaxeServer {
+abstract HaxeServerProtocolMethods(HaxeServerSync) from HaxeServerSync {
 	public function initialize(params:InitializeParams) {
 		return this.request(Methods.Initialize, params).result.result;
 	}
 }
 
-abstract HaxeServerDisplayMethods(HaxeServer) from HaxeServer {
+abstract HaxeServerDisplayMethods(HaxeServerSync) from HaxeServerSync {
 	public function completion(params:CompletionParams) {
 		return this.request(DisplayMethods.Completion, params).result.result;
 	}
@@ -61,12 +61,12 @@ abstract HaxeServerDisplayMethods(HaxeServer) from HaxeServer {
 /**
 	Convenience API wrapper for the Haxe 4 JSON-RPC API.
 **/
-abstract HaxeMethods(HaxeServer) {
+abstract HaxeMethods(HaxeServerSync) {
 	public var display(get, never):HaxeServerDisplayMethods;
 	public var protocol(get, never):HaxeServerProtocolMethods;
 	public var server(get, never):HaxeServerServerMethods;
 
-	public inline function new(haxeServer:HaxeServer) {
+	public inline function new(haxeServer:HaxeServerSync) {
 		this = haxeServer;
 	}
 

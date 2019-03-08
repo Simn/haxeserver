@@ -3,4 +3,6 @@
 -D analyzer-optimize
 -lib json-rpc
 -main Main
+#-lib hxnodejs
+#-js run.js
 --interp
