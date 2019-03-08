@@ -123,7 +123,7 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 				index: 0
 			};
 		}
-		var length = Std.int(Math.min(buffer.length, response.length));
+		var length = Std.int(Math.min(buffer.length, response.length - response.index));
 		buffer.copy(response.buffer, response.index, 0, length);
 		buffer = buffer.slice(length);
 		response.index += length;
