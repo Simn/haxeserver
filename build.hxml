@@ -2,7 +2,6 @@
 -cp tests
 -D analyzer-optimize
 -lib json-rpc
+-lib utest
 -main Main
-#-lib hxnodejs
-#-js run.js
 --interp
