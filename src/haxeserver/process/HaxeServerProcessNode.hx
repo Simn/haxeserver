@@ -24,7 +24,11 @@ private class RequestCallback {
 	}
 
 	public function append(requestCallback:RequestCallback) {
-		next = requestCallback;
+		if (next == null) {
+			next = requestCallback;
+		} else {
+			next.append(requestCallback);
+		}
 	}
 
 	public function addStdout(buf:Buffer) {
@@ -73,7 +77,9 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 	}
 
 	public function close() {
+		process.removeAllListeners();
 		process.kill();
+		process = null;
 	}
 
 	function checkRequestQueue() {
