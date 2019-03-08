@@ -42,7 +42,12 @@ class HaxeServerAsync extends HaxeServerBase {
 	public function request<P, R>(method:HaxeRequestMethod<P, R>, ?params:P, callback:R->Void) {
 		var arguments = getRequestArguments(method, params);
 		function rawCallback(result) {
-			callback(Json.parse(result.stderr));
+			var json = try {
+				Json.parse(result.stderr);
+			} catch (e:Dynamic) {
+				return;
+			}
+			callback(json);
 		}
 		rawRequest(arguments, null, rawCallback);
 	}
