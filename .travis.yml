@@ -3,5 +3,9 @@ sudo: false
 haxe:
  - development
 
+install:
+ - haxelib install utest
+ - haxelib git json-rpc https://github.com/vshaxe/json-rpc
+
 script:
  - haxe build.hxml
