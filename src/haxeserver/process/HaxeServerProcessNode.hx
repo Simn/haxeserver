@@ -8,23 +8,31 @@ import js.node.child_process.ChildProcess as ChildProcessObject;
 import js.node.ChildProcess;
 
 private class RequestCallback {
-	public var next:Null<RequestCallback>;
 	public final callback:HaxeServerRequestResult->Void;
 	public final errback:String->Void;
+	public final bytes:Bytes;
+	public var active:Bool;
 	public var stdout:Buffer;
+	public var next:Null<RequestCallback>;
 
-	public function new(callback:HaxeServerRequestResult->Void, errback:String->Void) {
+	public function new(bytes:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
+		this.bytes = bytes;
 		this.callback = callback;
 		this.errback = errback;
+		active = false;
 		stdout = Buffer.alloc(0);
 	}
 
-	public function append(callback:HaxeServerRequestResult->Void, errback:String->Void) {
-		next = new RequestCallback(callback, errback);
+	public function append(requestCallback:RequestCallback) {
+		next = requestCallback;
 	}
 
 	public function addStdout(buf:Buffer) {
 		stdout = Buffer.concat([stdout, buf]);
+	}
+
+	public function setActive() {
+		active = true;
 	}
 }
 
@@ -54,17 +62,25 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 	}
 
 	public function request(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
-		if (requests == null) {
-			requests = new RequestCallback(callback, errback);
-		} else {
-			requests.append(callback, errback);
-		}
 		var bytes = prepareInput(arguments, stdin);
-		process.stdin.write(Buffer.hxFromBytes(bytes));
+		var request = new RequestCallback(bytes, callback, errback);
+		if (requests == null) {
+			requests = request;
+		} else {
+			requests.append(request);
+		}
+		checkRequestQueue();
 	}
 
 	public function close() {
 		process.kill();
+	}
+
+	function checkRequestQueue() {
+		if (requests != null && !requests.active) {
+			requests.setActive();
+			process.stdin.write(Buffer.hxFromBytes(requests.bytes));
+		}
 	}
 
 	function onData(data:Buffer) {
@@ -110,6 +126,7 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 			requests.callback(result);
 			requests = requests.next;
 			response = null;
+			checkRequestQueue();
 		}
 	}
 }
