@@ -44,7 +44,7 @@ class HaxeServerAsync extends HaxeServerBase {
 		function rawCallback(result) {
 			var json = try {
 				Json.parse(result.stderr);
-			} catch (e:Dynamic) {
+			} catch (e:Any) {
 				return;
 			}
 			callback(json);
