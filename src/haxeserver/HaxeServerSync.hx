@@ -51,8 +51,8 @@ class HaxeServerSync extends HaxeServerBase {
 	}
 
 	#if sys
-	static public function launch(arguments:Array<String>) {
-		var f = () -> new haxeserver.process.HaxeServerProcessSys(arguments);
+	static public function launch(command:String, arguments:Array<String>) {
+		var f = () -> new haxeserver.process.HaxeServerProcessSys(command, arguments);
 		return new HaxeServerSync(f);
 	}
 	#end

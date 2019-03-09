@@ -52,9 +52,9 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 	}>;
 	var buffer:Buffer;
 
-	public function new(arguments:Array<String>) {
+	public function new(command:String, arguments:Array<String>, ?options:ChildProcessSpawnOptions) {
 		arguments = arguments.concat(["--wait", "stdio"]);
-		process = ChildProcess.spawn("haxe", arguments);
+		process = ChildProcess.spawn(command, arguments, options);
 		buffer = Buffer.alloc(0);
 		process.stderr.on(ReadableEvent.Data, onData);
 		process.stdout.on(ReadableEvent.Data, onStdout);

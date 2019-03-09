@@ -20,9 +20,9 @@ class HaxeServerProcessSys implements IHaxeServerProcess extends HaxeServerProce
 		adds `--wait stdio` to the arguments in order to set the Haxe process
 		to server mode.
 	**/
-	public function new(arguments:Array<String>) {
+	public function new(command:String, arguments:Array<String>) {
 		arguments = arguments.concat(["--wait", "stdio"]);
-		process = new Process("haxe", arguments);
+		process = new Process(command, arguments);
 	}
 
 	public function isAsynchronous() {
