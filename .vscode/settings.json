@@ -1,4 +1,9 @@
 {
+	"haxe.displayConfigurations": [
+		{"label": "JavaScript", "args": ["build.hxml", "-js", "export/test.js", "-lib", "hxnodejs", "-cmd", "node export/test.js"]},
+		{"label": "Interp", "args": ["build.hxml", "--interp"]},
+	],
+	"haxe.enableCompilationServer": false,
 	"[haxe]": {
 		"editor.formatOnSave": true
 	}

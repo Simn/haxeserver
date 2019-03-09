@@ -8,4 +8,5 @@ install:
  - haxelib git json-rpc https://github.com/vshaxe/json-rpc
 
 script:
- - haxe build.hxml
+ - haxe build.hxml --interp
+ - haxe build.hxml -js export/test.js --cmd "node export/test.js"
