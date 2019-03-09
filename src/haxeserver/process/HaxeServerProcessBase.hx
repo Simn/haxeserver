@@ -5,7 +5,7 @@ import haxe.io.BytesBuffer;
 import haxe.io.Bytes;
 
 class HaxeServerProcessBase {
-	function processResult(result:Bytes, stdout:Bytes) {
+	function processResult(stderr:Bytes, stdout:Bytes) {
 		var buf = new StringBuf();
 		var currentLine = new StringBuf();
 		var prints = [];
@@ -25,8 +25,8 @@ class HaxeServerProcessBase {
 		inline function add(byte:Int) {
 			currentLine.addChar(byte);
 		}
-		for (offset in 0...result.length) {
-			var byte = result.get(offset);
+		for (offset in 0...stderr.length) {
+			var byte = stderr.get(offset);
 			switch (byte) {
 				case "\n".code:
 					add(byte);
@@ -45,7 +45,8 @@ class HaxeServerProcessBase {
 			hasError: hasError,
 			prints: prints,
 			stdout: stdout.getString(0, stdout.length),
-			stderr: buf.toString()
+			stderr: buf.toString(),
+			stderrRaw: stderr
 		}
 	}
 

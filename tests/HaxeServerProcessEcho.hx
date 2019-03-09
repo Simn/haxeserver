@@ -10,10 +10,12 @@ class HaxeServerProcessEcho implements IHaxeServerProcess {
 	}
 
 	public function request(arguments:Array<String>, ?stdin:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
+		var stderr = arguments.join(" ");
 		callback({
 			hasError: false,
 			stdout: stdin == null ? "" : stdin.getString(0, stdin.length),
-			stderr: arguments.join(" "),
+			stderr: stderr,
+			stderrRaw: Bytes.ofString(stderr),
 			prints: []
 		});
 	}
