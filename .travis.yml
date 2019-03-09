@@ -6,7 +6,8 @@ haxe:
 install:
  - haxelib install utest
  - haxelib git json-rpc https://github.com/vshaxe/json-rpc
+ - haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs
 
 script:
  - haxe build.hxml --interp
- - haxe build.hxml -js export/test.js --cmd "node export/test.js"
+ - haxe build.hxml -lib hxnodejs -js export/test.js --cmd "node export/test.js"
