@@ -48,14 +48,15 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 	var stdoutBuffer:Buffer;
 	var closeRequested:Bool;
 	var onCloseCallbacks:Array<() -> Void>;
+	var onExitCallbacks:Array<String->Void>;
 
 	public function new(command:String, arguments:Array<String>, ?options:ChildProcessSpawnOptions) {
 		arguments = arguments.concat(["--wait", "stdio"]);
 		reset();
 		process = ChildProcess.spawn(command, arguments, options);
-		process.stderr.on(ReadableEvent.Data, onStderr);
-		process.stdout.on(ReadableEvent.Data, onStdout);
-		process.on(ChildProcessEvent.Exit, onExit);
+		process.stderr.on(ReadableEvent.Data, handleOnStderr);
+		process.stdout.on(ReadableEvent.Data, handleOnStdout);
+		process.on(ChildProcessEvent.Exit, handleOnExit);
 	}
 
 	public function isAsynchronous() {
@@ -71,6 +72,14 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 			requests.append(request);
 		}
 		checkRequestQueue();
+	}
+
+	/**
+		Registers `callback` to be called when the Haxe process exits. It receives
+		the content of stderr as argument.
+	**/
+	public function onExit(callback:String->Void) {
+		onExitCallbacks.push(callback);
 	}
 
 	/**
@@ -113,6 +122,7 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 			process = null;
 		}
 		onCloseCallbacks = [];
+		onExitCallbacks = [];
 		stderrBuffer = Buffer.alloc(0);
 		stdoutBuffer = Buffer.alloc(0);
 		closeRequested = false;
@@ -129,7 +139,7 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		}
 	}
 
-	function onStderr(data:Buffer) {
+	function handleOnStderr(data:Buffer) {
 		if (data.length == 0) {
 			return;
 		}
@@ -137,16 +147,20 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		processBuffer();
 	}
 
-	function onStdout(data:Buffer) {
+	function handleOnStdout(data:Buffer) {
 		if (requests != null) {
 			stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
 		}
 	}
 
-	function onExit(code:Int, msg:String) {
+	function handleOnExit(code:Int, msg:String) {
 		while (requests != null) {
 			requests.errback('Process exited with code $code: $msg');
 			requests = requests.next;
+		}
+		var stderr = stderrBuffer.toString();
+		for (callback in onExitCallbacks) {
+			callback(stderr);
 		}
 	}
 
