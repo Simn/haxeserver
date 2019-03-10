@@ -37,22 +37,6 @@ class HaxeServerAsync extends HaxeServerBase {
 	}
 
 	/**
-		Sends a json-rpc request to the process, with the given `method` and `params` and calls `callback` upon completion.
-	**/
-	public function request<P, R>(method:HaxeRequestMethod<P, R>, ?params:P, callback:R->Void, errback:String->Void) {
-		var arguments = getRequestArguments(method, params);
-		function rawCallback(result) {
-			var json = try {
-				Json.parse(result.stderr);
-			} catch (e:Dynamic) {
-				return errback(Std.string(e));
-			}
-			callback(json);
-		}
-		rawRequest(arguments, null, rawCallback, errback);
-	}
-
-	/**
 		Convenience function to launch a new `HaxeServerAsync` instance with the given `command`
 		and `arguments`.
 

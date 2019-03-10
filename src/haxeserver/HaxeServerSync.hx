@@ -35,21 +35,6 @@ class HaxeServerSync extends HaxeServerBase {
 		return result;
 	}
 
-	/**
-		Sends a json-rpc request to the process, with the given `method` and `params`.
-
-		If the request fails, an exception of type `HaxeRequestException` is thrown.
-	**/
-	public function request<P, R>(method:HaxeRequestMethod<P, R>, ?params:P):Response<R> {
-		var arguments = getRequestArguments(method, params);
-		var result = rawRequest(arguments);
-		if (result.hasError) {
-			throw new HaxeRequestException(result.stderr, method, params);
-		} else {
-			return Json.parse(result.stderr);
-		}
-	}
-
 	#if sys
 	static public function launch(command:String, arguments:Array<String>) {
 		var f = () -> new haxeserver.process.HaxeServerProcessSys(command, arguments);

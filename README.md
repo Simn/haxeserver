@@ -12,10 +12,6 @@ These classes abstract over the processes and provide easy-to-use request method
 
 At this level, the exact arguments to the processes have to be managed manually.
 
-### Level 3: JSON-RPC requests via `request` on HaxeServerSync and HaxeServerAsync
-
-Through the `request` method, the methods defined in the `haxeserver.protocol` can be used to easily communicate with Haxe in a defined manner.
-
 ## Example
 
 ```haxe
@@ -23,7 +19,6 @@ class Main {
 	static function main() {
 		exampleSync();
 		exampleAsync();
-		exampleProtocol();
 	}
 
 	// The function which creates our process. In this case, we use the synchronous
@@ -49,17 +44,6 @@ class Main {
 		haxeServer.rawRequest(["--version"], result -> {
 			trace(result);
 			// Close the server. This also stops the process.
-			haxeServer.close();
-		});
-	}
-
-	static function exampleProtocol() {
-		var haxeServer = new haxeserver.HaxeServerAsync(createProcess);
-
-		haxeServer.request(haxeserver.protocol.Protocol.Methods.Initialize, {}, result -> {
-			// The compiler knows it's a haxeserver.protocol.InitializeResult
-			$type(result);
-			trace(result);
 			haxeServer.close();
 		});
 	}

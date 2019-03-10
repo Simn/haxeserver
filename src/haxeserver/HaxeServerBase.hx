@@ -51,21 +51,6 @@ class HaxeServerBase {
 		this.defaultRequestArguments = arguments;
 	}
 
-	function getRequestArguments<P, R>(method:HaxeRequestMethod<P, R>, ?params:P):Array<String> {
-		var id = requestId++;
-		var request:RequestMessage = {
-			jsonrpc: @:privateAccess jsonrpc.Protocol.PROTOCOL_VERSION,
-			id: id,
-			method: method
-		}
-		if (params != null) {
-			request.params = params;
-		}
-		var requestJson = Json.stringify(request);
-		var arguments = ["--display", requestJson];
-		return arguments;
-	}
-
 	/**
 		Closes the `HaxeServer` instance and the underlying process.
 	**/
