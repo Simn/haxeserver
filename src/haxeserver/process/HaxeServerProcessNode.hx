@@ -10,17 +10,15 @@ import js.node.ChildProcess;
 private class RequestCallback {
 	public final callback:HaxeServerRequestResult->Void;
 	public final errback:String->Void;
-	public final bytes:Bytes;
+	public final stdin:Bytes;
 	public var active:Bool;
-	public var stdout:Buffer;
 	public var next:Null<RequestCallback>;
 
-	public function new(bytes:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
-		this.bytes = bytes;
+	public function new(stdin:Bytes, callback:HaxeServerRequestResult->Void, errback:String->Void) {
+		this.stdin = stdin;
 		this.callback = callback;
 		this.errback = errback;
 		active = false;
-		stdout = Buffer.alloc(0);
 	}
 
 	public function append(requestCallback:RequestCallback) {
@@ -29,10 +27,6 @@ private class RequestCallback {
 		} else {
 			next.append(requestCallback);
 		}
-	}
-
-	public function addStdout(buf:Buffer) {
-		stdout = Buffer.concat([stdout, buf]);
 	}
 
 	public function setActive() {
@@ -50,15 +44,16 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		buffer:Buffer,
 		index:Int
 	}>;
-	var buffer:Buffer;
-	var onCloseCallbacks:Array<() -> Void>;
+	var stderrBuffer:Buffer;
+	var stdoutBuffer:Buffer;
 	var closeRequested:Bool;
+	var onCloseCallbacks:Array<() -> Void>;
 
 	public function new(command:String, arguments:Array<String>, ?options:ChildProcessSpawnOptions) {
 		arguments = arguments.concat(["--wait", "stdio"]);
 		reset();
 		process = ChildProcess.spawn(command, arguments, options);
-		process.stderr.on(ReadableEvent.Data, onData);
+		process.stderr.on(ReadableEvent.Data, onStderr);
 		process.stdout.on(ReadableEvent.Data, onStdout);
 		process.on(ChildProcessEvent.Exit, onExit);
 	}
@@ -118,7 +113,8 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 			process = null;
 		}
 		onCloseCallbacks = [];
-		buffer = Buffer.alloc(0);
+		stderrBuffer = Buffer.alloc(0);
+		stdoutBuffer = Buffer.alloc(0);
 		closeRequested = false;
 	}
 
@@ -129,21 +125,21 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		}
 		if (requests != null && !requests.active) {
 			requests.setActive();
-			process.stdin.write(Buffer.hxFromBytes(requests.bytes));
+			process.stdin.write(Buffer.hxFromBytes(requests.stdin));
 		}
 	}
 
-	function onData(data:Buffer) {
+	function onStderr(data:Buffer) {
 		if (data.length == 0) {
 			return;
 		}
-		buffer = Buffer.concat([buffer, data]);
+		stderrBuffer = Buffer.concat([stderrBuffer, data]);
 		processBuffer();
 	}
 
 	function onStdout(data:Buffer) {
 		if (requests != null) {
-			requests.addStdout(data);
+			stdoutBuffer = Buffer.concat([stdoutBuffer, data]);
 		}
 	}
 
@@ -156,23 +152,24 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 
 	function processBuffer() {
 		if (response == null) {
-			if (buffer.length < 4) {
+			if (stderrBuffer.length < 4) {
 				return;
 			}
-			var length = buffer.readInt32LE(0);
-			buffer = buffer.slice(4);
+			var length = stderrBuffer.readInt32LE(0);
+			stderrBuffer = stderrBuffer.slice(4);
 			response = {
 				length: length,
 				buffer: Buffer.alloc(length),
 				index: 0
 			};
 		}
-		var length = Std.int(Math.min(buffer.length, response.length - response.index));
-		buffer.copy(response.buffer, response.index, 0, length);
-		buffer = buffer.slice(length);
+		var length = Std.int(Math.min(stderrBuffer.length, response.length - response.index));
+		stderrBuffer.copy(response.buffer, response.index, 0, length);
+		stderrBuffer = stderrBuffer.slice(length);
 		response.index += length;
 		if (response.index == response.length) {
-			var result = processResult(response.buffer.hxToBytes(), requests.stdout.hxToBytes());
+			var result = processResult(response.buffer.hxToBytes(), stdoutBuffer.hxToBytes());
+			stdoutBuffer = Buffer.alloc(0);
 			requests.callback(result);
 			requests = requests.next;
 			response = null;
