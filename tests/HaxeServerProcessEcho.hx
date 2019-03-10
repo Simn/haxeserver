@@ -20,5 +20,5 @@ class HaxeServerProcessEcho implements IHaxeServerProcess {
 		});
 	}
 
-	public function close() {}
+	public function close(graceful:Bool = true, ?callback:() -> Void) {}
 }

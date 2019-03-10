@@ -37,9 +37,9 @@ class HaxeServerBase {
 		}
 	}
 
-	public function stop() {
+	public function stop(graceful:Bool = true, ?callback:() -> Void) {
 		if (process != null) {
-			process.close();
+			process.close(graceful, callback);
 			process = null;
 		}
 	}

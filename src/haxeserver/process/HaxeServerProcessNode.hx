@@ -51,11 +51,13 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		index:Int
 	}>;
 	var buffer:Buffer;
+	var onCloseCallbacks:Array<() -> Void>;
+	var closeRequested:Bool;
 
 	public function new(command:String, arguments:Array<String>, ?options:ChildProcessSpawnOptions) {
 		arguments = arguments.concat(["--wait", "stdio"]);
+		reset();
 		process = ChildProcess.spawn(command, arguments, options);
-		buffer = Buffer.alloc(0);
 		process.stderr.on(ReadableEvent.Data, onData);
 		process.stdout.on(ReadableEvent.Data, onStdout);
 		process.on(ChildProcessEvent.Exit, onExit);
@@ -76,13 +78,55 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		checkRequestQueue();
 	}
 
-	public function close() {
-		process.removeAllListeners();
-		process.kill();
-		process = null;
+	/**
+		Closes the Haxe compilation server process. No other methods on `this`
+		instance should be used afterwards.
+
+		If `graceful` is `true` and there is a request which has already been sent
+		to the Haxe process, that request is allowed to finish before closing
+		the process.
+
+		If `graceful` is `false`, the process is closed (killed) immediately.
+
+		In either case, if `callback` is provided, it is called after the process
+		has terminated.
+	**/
+	public function close(graceful:Bool = true, ?callback:() -> Void) {
+		if (callback != null) {
+			onCloseCallbacks.push(callback);
+		}
+		if (graceful && requests != null && requests.active) {
+			closeRequested = true;
+		} else {
+			reset();
+		}
+	}
+
+	function reset() {
+		while (requests != null) {
+			requests.errback('Process closed');
+			requests = requests.next;
+		}
+		if (onCloseCallbacks != null) {
+			for (callback in onCloseCallbacks) {
+				callback();
+			}
+		}
+		if (process != null) {
+			process.removeAllListeners();
+			process.kill();
+			process = null;
+		}
+		onCloseCallbacks = [];
+		buffer = Buffer.alloc(0);
+		closeRequested = false;
 	}
 
 	function checkRequestQueue() {
+		if (closeRequested) {
+			reset();
+			return;
+		}
 		if (requests != null && !requests.active) {
 			requests.setActive();
 			process.stdin.write(Buffer.hxFromBytes(requests.bytes));

@@ -13,5 +13,5 @@ class HaxeServerProcessError implements IHaxeServerProcess {
 		errback(arguments.join(" "));
 	}
 
-	public function close() {}
+	public function close(graceful:Bool = true, ?callback:() -> Void) {}
 }

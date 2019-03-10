@@ -45,8 +45,14 @@ class HaxeServerProcessSys implements IHaxeServerProcess extends HaxeServerProce
 	/**
 		Closes the Haxe compilation server process. No other methods on `this`
 		instance should be used afterwards.
+
+		The `graceful` argument has no effect on this kind of process. If
+		`callback` is given, it is called immediately after closing the process.
 	**/
-	public function close() {
+	public function close(graceful:Bool = true, ?callback:() -> Void) {
 		process.close();
+		if (callback != null) {
+			callback();
+		}
 	}
 }
