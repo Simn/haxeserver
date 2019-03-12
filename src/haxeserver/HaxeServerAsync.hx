@@ -1,8 +1,6 @@
 package haxeserver;
 
-import haxe.Json;
 import haxe.io.Bytes;
-import haxeserver.protocol.Protocol;
 import haxeserver.process.IHaxeServerProcess;
 
 /**

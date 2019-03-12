@@ -7,7 +7,5 @@
 	"releasenote": "Initial",
 	"classPath": "src",
 	"contributors": ["Simn","nadako", "Gama11"],
-	"dependencies": {
-		"json-rpc": ""
-	}
+	"dependencies": {}
 }

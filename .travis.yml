@@ -5,7 +5,6 @@ haxe:
 
 install:
  - haxelib install utest
- - haxelib git json-rpc https://github.com/vshaxe/json-rpc
  - haxelib git hxnodejs https://github.com/HaxeFoundation/hxnodejs
 
 script:
