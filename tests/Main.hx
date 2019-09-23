@@ -1,9 +1,12 @@
+import utest.Async;
+import eval.Uv;
 import utest.ITest;
 import haxe.io.Bytes;
 import utest.Assert;
 import haxeserver.HaxeServerSync;
 import haxeserver.HaxeServerAsync;
 import haxeserver.process.IHaxeServerProcess;
+import haxeserver.process.HaxeServerProcessAsys;
 import utest.Runner;
 import utest.ui.Report;
 
@@ -91,12 +94,43 @@ class TestAsyncError implements ITest {
 	}
 }
 
+class TestHaxeServerProcessAsys implements ITest {
+	var process:IHaxeServerProcess;
+	var haxeServer:HaxeServerAsync;
+
+	public function new() {}
+
+	function setup() {
+		Uv.init();
+	}
+
+	function teardown() {
+		Uv.close();
+	}
+
+	public function testSetup(async:Async) {
+		function run() {
+			haxeServer.rawRequest(["--version"], null, result -> {
+				Assert.pass();
+				process.close(() -> async.done());
+			}, error -> {
+				Assert.fail(error);
+				process.close(() -> async.done());
+			});
+		}
+		process = new HaxeServerProcessAsys("haxe.exe", [], run);
+		haxeServer = new HaxeServerAsync(() -> process);
+		Uv.run(RunDefault);
+	}
+}
+
 class Main {
 	static public function main() {
 		var runner = new Runner();
 		runner.addCase(new TestSyncInterface());
 		runner.addCase(new TestAsyncInterface());
 		runner.addCase(new TestAsyncError());
+		runner.addCase(new TestHaxeServerProcessAsys());
 		var report = Report.create(runner);
 		report.displayHeader = AlwaysShowHeader;
 		report.displaySuccessResults = NeverShowSuccessResults;
