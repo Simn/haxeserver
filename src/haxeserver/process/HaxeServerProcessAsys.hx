@@ -4,8 +4,6 @@ import haxe.io.BytesBuffer;
 import asys.net.Socket;
 import asys.Net;
 import asys.net.Server;
-import eval.vm.NativeThread;
-import haxe.ds.GenericStack;
 import haxe.io.Bytes;
 import asys.Process;
 
@@ -42,6 +40,7 @@ class HaxeServerProcessAsys implements IHaxeServerProcess extends HaxeServerProc
 		index:Int
 	}>;
 	var buffer:Bytes;
+	var stdoutBuffer:BytesBuffer;
 
 	/**
 		Starts a new Haxe process with the given `arguments`. It automatically
@@ -62,7 +61,7 @@ class HaxeServerProcessAsys implements IHaxeServerProcess extends HaxeServerProc
 				case Network(_, port):
 					arguments = arguments.concat(["--server-connect", "127.0.0.1:" + port]);
 					process = Process.spawn(command, arguments);
-					process.stdout.dataSignal.on(bytes -> {});
+					process.stdout.dataSignal.on(bytes -> stdoutBuffer.addBytes(bytes, 0, bytes.length));
 					for (pipe in process.stdio) {
 						pipe.unref();
 					}
@@ -76,6 +75,7 @@ class HaxeServerProcessAsys implements IHaxeServerProcess extends HaxeServerProc
 
 		requests = [];
 		buffer = Bytes.alloc(0);
+		stdoutBuffer = new BytesBuffer();
 	}
 
 	public function isAsynchronous() {
@@ -149,7 +149,8 @@ class HaxeServerProcessAsys implements IHaxeServerProcess extends HaxeServerProc
 		sliceBuffer(length);
 		response.index += length;
 		if (response.index == response.length) {
-			var result = processResult(response.buffer, Bytes.alloc(0));
+			var result = processResult(response.buffer, stdoutBuffer.getBytes());
+			stdoutBuffer = new BytesBuffer();
 			response = null;
 			var cb = requests.shift();
 			cb.callback(result);
