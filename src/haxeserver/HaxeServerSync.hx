@@ -38,5 +38,14 @@ class HaxeServerSync extends HaxeServerBase {
 		var f = () -> new haxeserver.process.HaxeServerProcessSys(command, arguments);
 		return new HaxeServerSync(f);
 	}
+
+	/**
+		Makes requests via `<command> --connect <port>`.
+		The haxe server process has to be started manually prior to executing requests.
+	**/
+	static public function connect(command:String, port:Int, arguments:Array<String>) {
+		var f = () -> new haxeserver.process.HaxeServerProcessConnect(command, port, arguments);
+		return new HaxeServerSync(f);
+	}
 	#end
 }
