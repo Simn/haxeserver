@@ -182,6 +182,13 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		stderrBuffer = stderrBuffer.slice(length);
 		response.index += length;
 		if (response.index == response.length) {
+			while (process.stdout.readable) {
+				var read = process.stdout.read();
+				if (read == null) {
+					break;
+				}
+				handleOnStdout(read);
+			}
 			var result = processResult(response.buffer.hxToBytes(), stdoutBuffer.hxToBytes());
 			stdoutBuffer = Buffer.alloc(0);
 			requests.callback(result);
