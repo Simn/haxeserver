@@ -6,6 +6,7 @@ import js.node.Buffer;
 import js.node.stream.Readable.ReadableEvent;
 import js.node.child_process.ChildProcess as ChildProcessObject;
 import js.node.ChildProcess;
+import js.node.net.Server.ServerEvent;
 
 private class RequestCallback {
 	public final callback:HaxeServerRequestResult->Void;
@@ -49,14 +50,25 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 	var closeRequested:Bool;
 	var onCloseCallbacks:Array<() -> Void>;
 	var onExitCallbacks:Array<String->Void>;
+	var socket:Null<js.node.net.Socket>;
 
-	public function new(command:String, arguments:Array<String>, ?options:ChildProcessSpawnOptions) {
-		arguments = arguments.concat(["--wait", "stdio"]);
+	public function new(command:String, arguments:Array<String>, ?options:ChildProcessSpawnOptions, ?done:() -> Void) {
 		reset();
-		process = ChildProcess.spawn(command, arguments, options);
-		process.stderr.on(ReadableEvent.Data, handleOnStderr);
-		process.stdout.on(ReadableEvent.Data, handleOnStdout);
-		process.on(ChildProcessEvent.Exit, handleOnExit);
+		final server = js.node.Net.createServer();
+		server.listen(0, function() {
+			final port = server.address().port;
+			process = ChildProcess.spawn(command, arguments.concat(["--server-connect", '127.0.0.1:$port']), options == null ? {} : options);
+			server.on(ServerEvent.Connection, function(socket) {
+				server.close();
+				socket.on(ReadableEvent.Data, handleOnStderr);
+				process.stdout.on(ReadableEvent.Data, handleOnStdout);
+				process.on(ChildProcessEvent.Exit, handleOnExit);
+				this.socket = socket;
+				if (done != null) {
+					done();
+				}
+			});
+		});
 	}
 
 	public function isAsynchronous() {
@@ -121,6 +133,9 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 			process.kill();
 			process = null;
 		}
+		if (socket != null) {
+			socket.destroy();
+		}
 		onCloseCallbacks = [];
 		onExitCallbacks = [];
 		stderrBuffer = Buffer.alloc(0);
@@ -135,7 +150,7 @@ class HaxeServerProcessNode implements IHaxeServerProcess extends HaxeServerProc
 		}
 		if (requests != null && !requests.active) {
 			requests.setActive();
-			process.stdin.write(Buffer.hxFromBytes(requests.stdin));
+			socket.write(Buffer.hxFromBytes(requests.stdin));
 		}
 	}
 
