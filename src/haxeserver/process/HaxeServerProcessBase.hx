@@ -33,6 +33,7 @@ class HaxeServerProcessBase {
 					commitLine();
 					newLine = true;
 				case 0x01:
+					if (inPrint) commitLine();
 					inPrint = true;
 				case 0x02:
 					hasError = true;
